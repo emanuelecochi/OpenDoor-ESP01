@@ -29,6 +29,8 @@ Adafruit_MQTT_Client mqtt(&client, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME, AIO
 /****************************** Feeds ***************************************/
 // Setup a feed called 'open-door' for subscribing to changes.
 Adafruit_MQTT_Subscribe openDoorFeed = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME "/feeds/open-door");
+// Setup a fedd called 'open-door-response' for publish the response
+Adafruit_MQTT_Publish openDoorFeedResponse = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/open-door-response");
 
 /*************************** Sketch Code ************************************/
 
@@ -51,7 +53,8 @@ void setup() {
   Serial.print("Connecting to ");
   Serial.println(WLAN_SSID);
 
-  WiFi.begin(WLAN_SSID, WLAN_PASS);   
+  WiFi.begin(WLAN_SSID, WLAN_PASS); 
+  WiFi.setSleepMode(WIFI_NONE_SLEEP);  
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
@@ -82,6 +85,7 @@ void loop() {
       Serial.print(F("Got: "));
       Serial.println((char *)openDoorFeed.lastread);
       openDoor();
+      publishOpenDoorResponse();
     }
   }
 
@@ -90,6 +94,19 @@ void loop() {
   if(! mqtt.ping()) {
     mqtt.disconnect();
   }
+}
+
+bool publishOpenDoorResponse() {
+  bool success = false;
+  Serial.print(F("\nSending open door response "));
+  Serial.print("...");
+
+  if (! mqtt.publish(AIO_USERNAME "/feeds/open-door-response", "Il portone è aperto")) Serial.println(F("Failed"));
+  else {
+    Serial.println(F(" OK!"));
+    success = true;
+  }
+  return success;
 }
 
 void openDoor() {
